@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Emotion-Aware Support Chatbot</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            background: #ffffff;
+            width: 400px;
+            max-width: 100%;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 12px 16px;
+            background: #4f46e5;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .chat-header small {
+            display: block;
+            font-weight: normal;
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+            background: #f9fafb;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            max-width: 80%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+
+        .message.user {
+            margin-left: auto;
+            background: #4f46e5;
+            color: #ffffff;
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.bot {
+            margin-right: auto;
+            background: #e5e7eb;
+            color: #111827;
+            border-bottom-left-radius: 2px;
+        }
+
+        .emotion-tag {
+            display: inline-block;
+            margin-top: 2px;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .chat-input input {
+            flex: 1;
+            border: none;
+            padding: 12px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .chat-input button {
+            border: none;
+            padding: 0 16px;
+            font-size: 14px;
+            background: #4f46e5;
+            color: white;
+            cursor: pointer;
+        }
+
+        .chat-input button:disabled {
+            background: #9ca3af;
+            cursor: default;
+        }
+
+        .disclaimer {
+            font-size: 11px;
+            padding: 6px 10px;
+            color: #6b7280;
+            background: #eef2ff;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .typing-indicator {
+            font-size: 11px;
+            color: #6b7280;
+            font-style: italic;
+            margin: 4px 0 6px 0;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            Emotion-Aware Support Chatbot
+            <small>I'm Not a therapist. If you're in crisis, please contact local emergency services.</small>
+        </div>
+        <div class="disclaimer">
+            This bot offers emotional support only. It cannot provide medical advice.
+        </div>
+
+        
+        <div style="padding: 6px 10px; font-size: 12px;"> 
+            Language:
+            <select id="lang-select">
+                <option value="en" selected>English</option>
+                <option value="de">Deutsch (German)</option>
+            </select>
+        </div>
+    
+
+
+        <div class="chat-messages" id="chat-messages"></div>
+        <form class="chat-input" id="chat-form">
+            <input type="text" id="user-input" placeholder="Type how you're feeling..." autocomplete="off" />
+            <button type="submit" id="send-btn">Send</button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('user-input');
+        const messagesDiv = document.getElementById('chat-messages');
+        const sendBtn = document.getElementById('send-btn');
+        const langSelect = document.getElementById('lang-select');    // added for german response
+
+        let typingIndicator = null;
+
+        function showTypingIndicator() {
+            // Don't create it twice
+            if (typingIndicator) return;
+
+            typingIndicator = document.createElement('div');
+            typingIndicator.classList.add('typing-indicator');
+            typingIndicator.textContent = "Bot is typing…";
+            messagesDiv.appendChild(typingIndicator);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            if (typingIndicator && typingIndicator.parentNode) {
+                typingIndicator.parentNode.removeChild(typingIndicator);
+            }
+            typingIndicator = null;
+        }
+
+
+
+        function addMessage(text, sender, emotion, confidence = null, responseTime = null) {
+        const div = document.createElement('div');
+        div.classList.add('message', sender);
+        div.textContent = text;
+
+        if (sender === 'bot' && emotion) {
+            const tag = document.createElement('div');
+            tag.classList.add('emotion-tag');
+
+            let tagText = `Detected emotion: ${emotion}`;
+
+            if (confidence !== null && confidence !== undefined) {
+                const percent = (confidence * 100).toFixed(1);
+                tagText += ` (confidence: ${percent}%)`;
+            }
+
+            if (responseTime !== null && responseTime !== undefined) {
+                const timeOneDecimal = Number(responseTime).toFixed(1);
+                tagText += ` | Response time: ${timeOneDecimal}s`;
+            }
+
+            tag.textContent = tagText;
+
+            div.appendChild(document.createElement('br'));
+            div.appendChild(tag);
+        }
+
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+        /*
+        function addMessage(text, sender, emotion, confidence = null) {
+            const div = document.createElement('div');
+            div.classList.add('message', sender);
+            div.textContent = text;
+
+            // if (sender === 'bot' && emotion && emotion !== 'neutral') {
+            if (sender === 'bot' && emotion) {
+                const tag = document.createElement('div');
+                tag.classList.add('emotion-tag');
+
+                // If confidence is available, show it
+                if (confidence !== null && confidence !== undefined) {
+                    const percent = (confidence * 100).toFixed(1);
+                    tag.textContent = `Detected emotion: ${emotion} (confidence: ${percent}%)`;
+                } else {
+                    // Fallback if confidence is missing
+                    tag.textContent = `Detected emotion: ${emotion}`;
+                }
+
+                div.appendChild(document.createElement('br'));
+                div.appendChild(tag);
+            }
+
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }*/
+
+        // Initial message
+        addMessage(
+            "Hi, I'm here to listen. 🌿\nYou can tell me how you're feeling, and we'll go from there.",
+            "bot"
+        );
+
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = input.value.trim();
+            if (!text) return;
+
+            addMessage(text, 'user');
+            input.value = '';
+            sendBtn.disabled = true;
+
+            // 🟢 Show "Bot is typing…" after user sends message
+            showTypingIndicator();
+
+            try {
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: text,
+                        lang: langSelect ? langSelect.value : "en"  // in case langSelect not defined
+                    })
+                });
+
+                const data = await res.json();
+
+                // 🔴 Hide typing indicator once we have a response
+                hideTypingIndicator();
+
+                addMessage(
+                    data.reply,
+                    'bot',
+                    data.emotion,
+                    data.confidence,
+                    data.response_time
+                );
+            } catch (err) {
+                console.error(err);
+                hideTypingIndicator();  // also hide if there is an error
+                addMessage("Sorry, something went wrong on my side. Please try again in a moment.", "bot");
+            } finally {
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        });
+
+        /*
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = input.value.trim();
+            if (!text) return;
+
+            addMessage(text, 'user');
+            input.value = '';
+            sendBtn.disabled = true;
+
+            try {
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // body: JSON.stringify({ message: text })
+                    body: JSON.stringify({
+                        message: text,
+                        lang: langSelect.value   // "en" or "de"
+                    }) // added this for german response
+
+                });
+
+                const data = await res.json();
+                addMessage(data.reply, 'bot', data.emotion, data.confidence, data.response_time);
+            } catch (err) {
+                console.error(err);
+                addMessage("Sorry, something went wrong on my side. Please try again in a moment.", "bot");
+            } finally {
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        });
+        */
+    </script>
+</body>
+</html>

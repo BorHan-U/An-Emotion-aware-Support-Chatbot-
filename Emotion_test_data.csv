@@ -1,0 +1,11 @@
+text,true_emotion
+"I feel very sad and hopeless",sadness
+"I am extremely angry right now",anger
+"I feel scared about my future",fear
+"I am happy with my progress",joy
+"I feel nothing in particular",neutral
+"I am stressed and anxious",fear
+"I feel lonely and empty",sadness
+"I am excited for tomorrow",joy
+"I feel frustrated with everything",anger
+"I don't know how I feel today",neutral
