@@ -1,0 +1,9 @@
+flask
+torch
+transformers
+scikit-learn
+pandas
+numpy
+matplotlib
+seaborn
+sentencepiece
